@@ -45,7 +45,7 @@ const LoginAdmin = () => {
     if (!loadingPost && response) {
       if (response.status === 200 && response.data) {
         console.log('response', response)
-        dispatch(setUser(response?.data?.admin));
+        dispatch(setUser(response?.data));
         localStorage.setItem("admin", JSON.stringify(response?.data?.admin));
         localStorage.setItem("token", response?.data?.admin.token);
         const redirectTo = new URLSearchParams(location.search).get("redirect");

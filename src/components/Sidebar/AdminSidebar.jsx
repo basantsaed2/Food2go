@@ -37,26 +37,51 @@ export function AdminSidebar() {
         const initialExpanded = {};
         navItems.forEach((item) => {
             if (item.subItems) {
-                // Expand only if the current route matches a sub-item
                 const isParentActive = item.subItems.some((sub) =>
-                    location.pathname.startsWith(sub.to)
+                    location.pathname === sub.to || location.pathname.startsWith(sub.to + '/')
                 );
                 initialExpanded[item.label] = isParentActive;
             }
         });
-        setExpandedItems(initialExpanded); // Reset state to collapse non-active menus
+        setExpandedItems(initialExpanded);
     }, [location.pathname]);
 
     const toggleExpand = (label) => {
         setExpandedItems((prev) => {
             const isParentActive = navItems
                 .find((item) => item.label === label)
-                ?.subItems?.some((sub) => location.pathname.startsWith(sub.to));
+                ?.subItems?.some((sub) => location.pathname === sub.to || location.pathname.startsWith(sub.to + '/'));
             return {
                 ...prev,
                 [label]: isParentActive ? true : !prev[label],
             };
         });
+    };
+
+    // Completely automatic active state detection
+    const isItemActive = (item) => {
+        if (item.to === "/") {
+            return location.pathname === "/";
+        } else if (item.subItems) {
+            return item.subItems.some((sub) => 
+                location.pathname === sub.to || location.pathname.startsWith(sub.to + '/')
+            );
+        } else if (item.to) {
+            // Get all top-level paths that could potentially conflict
+            const allTopLevelPaths = navItems
+                .filter(nav => nav.to && !nav.subItems)
+                .map(nav => nav.to)
+                .sort((a, b) => b.length - a.length); // Sort by length descending to match longest paths first
+            
+            // Find the best matching path
+            const bestMatch = allTopLevelPaths.find(path => 
+                location.pathname === path || location.pathname.startsWith(path + '/')
+            );
+            
+            // Only activate if this item is the best match
+            return bestMatch === item.to;
+        }
+        return false;
     };
 
     return (
@@ -82,17 +107,7 @@ export function AdminSidebar() {
                     <SidebarGroupContent>
                         <SidebarMenu className="list-none p-0 rounded-md flex flex-col gap-2">
                             {navItems.map((item) => {
-                                const isActive = (() => {
-                                    if (item.to === "/") {
-                                        return location.pathname === "/";
-                                    } else if (item.subItems) {
-                                        return item.subItems.some((sub) => location.pathname.startsWith(sub.to));
-                                    } else if (item.to) {
-                                        return location.pathname.startsWith(item.to);
-                                    }
-                                    return false;
-                                })();
-
+                                const isActive = isItemActive(item);
                                 const isExpanded = expandedItems[item.label];
 
                                 return (
@@ -101,8 +116,8 @@ export function AdminSidebar() {
                                             <Link to={item.to}>
                                                 <SidebarMenuButton
                                                     isActive={isActive}
-                                                    className={`flex cursor-pointer justify-between items-center gap-3 !p-2 text-white transition-all duration-200 text-base font-medium
-                            ${isActive ? "shadow-md bg-white text-bg-primary" : "bg-bg-primary text-white hover:bg-white hover:text-bg-primary"}`}
+                                                    className={`flex cursor-pointer justify-between items-center gap-3 !p-2 text-white transition-all duration-200 text-base font-medium rounded-md
+                            ${isActive ? "shadow-md bg-white text-bg-primary" : "bg-transparent text-white hover:bg-white hover:text-bg-primary"}`}
                                                 >
                                                     <div className="flex items-center gap-3">
                                                         {item.icon}
@@ -114,12 +129,12 @@ export function AdminSidebar() {
                                             <SidebarMenuButton
                                                 onClick={() => toggleExpand(item.label)}
                                                 isActive={isActive}
-                                                className={`flex cursor-pointer justify-between items-center gap-3 !p-2 text-bg-primary transition-all duration-200 text-base font-medium
-                            ${isActive ? "shadow-md bg-white text-bg-primary" : "bg-bg-primary text-white hover:bg-white hover:text-bg-primary"}`}
+                                                className={`flex cursor-pointer justify-between items-center gap-3 !p-2 transition-all duration-200 text-base font-medium rounded-md
+                            ${isActive ? "shadow-md bg-white text-bg-primary" : "bg-transparent text-white hover:bg-white hover:text-bg-primary"}`}
                                             >
                                                 <div className="flex items-center gap-3">
                                                     {item.icon}
-                                                    <span className="text-bas">{item.label}</span>
+                                                    <span className="text-base">{item.label}</span>
                                                 </div>
                                                 {item.subItems && (
                                                     <span>{isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}</span>
@@ -130,7 +145,8 @@ export function AdminSidebar() {
                                         {item.subItems && isExpanded && (
                                             <div className="!ml-6 mt-3 flex flex-col gap-2">
                                                 {item.subItems.map((subItem) => {
-                                                    const isSubActive = location.pathname.startsWith(subItem.to);
+                                                    const isSubActive = location.pathname === subItem.to || 
+                                                                       location.pathname.startsWith(subItem.to + '/');
                                                     return (
                                                         <Link
                                                             to={subItem.to}
@@ -139,11 +155,11 @@ export function AdminSidebar() {
                                                         >
                                                             <SidebarMenuButton
                                                                 isActive={isSubActive}
-                                                                className={`flex cursor-pointer justify-start items-center gap-3 !px-4 !py-2 text-bg-primary transition-all duration-200 text-base
-                            ${isSubActive ? "shadow-md bg-white text-bg-primary" : "bg-bg-primary text-white hover:bg-white hover:text-bg-primary"}`}
+                                                                className={`flex cursor-pointer justify-start items-center gap-3 !px-4 !py-2 transition-all duration-200 text-base rounded-md
+                            ${isSubActive ? "shadow-md bg-white text-bg-primary" : "bg-transparent text-white hover:bg-white hover:text-bg-primary"}`}
                                                             >
                                                                 {subItem.icon}
-                                                                <span className="text-bas">{subItem.label}</span>
+                                                                <span className="text-base">{subItem.label}</span>
                                                             </SidebarMenuButton>
                                                         </Link>
                                                     );

@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
 
 export const useGet = ({ url, enabled = true, pollInterval }) => {
-  const { user } = useSelector((state) => state.auth); // Get user from Redux store
+  const user = useSelector((state) => state.auth?.user); // Get user from Redux store
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(enabled);
 

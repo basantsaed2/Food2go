@@ -1,4 +1,3 @@
-import { Switch } from "@/components/ui/switch";
 import React, { useState, useEffect } from "react";
 import { Table } from '@/components/ui/table';
 import { Link, useNavigate } from 'react-router-dom';
@@ -8,44 +7,46 @@ import { useChangeState } from '@/Hooks/useChangeState';
 import DeleteDialog from '@/components/DeleteDialog';
 import FullPageLoader from "@/components/Loading";
 import { FaPlus } from "react-icons/fa";
+import { Switch } from "@/components/ui/switch";
 
 const StockMan = () => {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    const { refetch: refetchStockes, loading: loadingStockes, data: dataStockes } = useGet({ url: `${apiUrl}/admin/purchase_stores` });
+    const { refetch: refetchStockMen, loading: loadingStockMen, data: dataStockMen } = useGet({ url: `${apiUrl}/admin/purchase_store_man` });
     const { loadingDelete, deleteData } = useDelete();
     const { changeState, loadingChange } = useChangeState();
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [selectedRow, setSelectedRow] = useState(null);
-    const [Stockes, setStockes] = useState([]);
+    const [StockMen, setStockMen] = useState([]);
 
     const navigate = useNavigate();
 
     useEffect(() => {
-        refetchStockes();
-    }, [refetchStockes]);
+        refetchStockMen();
+    }, [refetchStockMen]);
 
     useEffect(() => {
-        if (dataStockes && dataStockes.stores) {
-            const formatted = dataStockes?.stores?.map((u) => ({
+        if (dataStockMen && dataStockMen.store_men) {
+            const formatted = dataStockMen.store_men.map((u) => ({
                 id: u.id,
-                name: u.name || "—",
+                user_name: u.user_name || "—",
+                phone: u.phone || "—",
+                store_name: u.store?.name || "—",
                 status: u.status ? "Active" : "Inactive",
                 rawStatus: u.status,
-                location: u.location,
-                branches: u.branches || [], // Make sure to include branches if available
+                image: u.image || null,
             }));
-            setStockes(formatted);
+            setStockMen(formatted);
         }
-    }, [dataStockes]);
+    }, [dataStockMen]);
 
     const handleStatusChange = async (id, newStatus) => {
-        const url = `${apiUrl}/admin/purchase_stores/status/${id}?status=${newStatus ? 1 : 0}`;
+        const url = `${apiUrl}/admin/purchase_store_man/status/${id}?status=${newStatus ? 1 : 0}`;
         const successMessage = `${newStatus ? 'Activated' : 'Deactivated'} Successfully`;
         
         const success = await changeState(url, successMessage, {});
         
         if (success) {
-            setStockes(prev => prev.map(item => 
+            setStockMen(prev => prev.map(item => 
                 item.id === id 
                     ? { 
                         ...item, 
@@ -58,8 +59,28 @@ const StockMan = () => {
     };
 
     const Columns = [
-        { key: "name", label: "Name" },
-        { key: "location", label: "Area" },
+        { 
+            key: "image", 
+            label: "Image",
+            renderCell: (item) => (
+                <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
+                    {item.image ? (
+                        <img 
+                            src={item.image} 
+                            alt={item.user_name}
+                            className="w-full h-full object-cover"
+                        />
+                    ) : (
+                        <span className="text-gray-500 text-sm">
+                            {item.user_name?.charAt(0)?.toUpperCase() || "U"}
+                        </span>
+                    )}
+                </div>
+            )
+        },
+        { key: "user_name", label: "User Name" },
+        { key: "phone", label: "Phone" },
+        { key: "store_name", label: "Store" },
         { 
             key: "status", 
             label: "Status",
@@ -78,7 +99,6 @@ const StockMan = () => {
         },
     ];
 
-    // Pass the entire item as state in navigation
     const handleEdit = (item) => navigate(`edit/${item.id}`, { state: { itemData: item } });
 
     const handleDelete = (item) => {
@@ -90,14 +110,14 @@ const StockMan = () => {
         if (!selectedRow) return;
 
         const success = await deleteData(
-            `${apiUrl}/admin/purchase_stores/delete/${selectedRow.id}`,
-            `${selectedRow.name} Deleted Successfully.`,
+            `${apiUrl}/admin/purchase_store_man/delete/${selectedRow.id}`,
+            `${selectedRow.user_name} Deleted Successfully.`,
             {}
         );
 
         if (success) {
             setIsDeleteOpen(false);
-            setStockes((prev) => prev.filter((item) => item.id !== selectedRow.id));
+            setStockMen((prev) => prev.filter((item) => item.id !== selectedRow.id));
             setSelectedRow(null);
         }
     };
@@ -105,7 +125,7 @@ const StockMan = () => {
     return (
         <div className="p-4">
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl text-bg-primary font-bold">Stock</h2>
+                <h2 className="text-2xl text-bg-primary font-bold">Stock Men</h2>
                 <Link
                     to="add"
                     className="flex justify-center items-center px-4 py-1 rounded-md text-base bg-bg-primary font-semibold text-white hover:bg-bg-primary/90"
@@ -113,11 +133,11 @@ const StockMan = () => {
                     <FaPlus className="mr-2 h-3 w-3 text-white" /> Add
                 </Link>
             </div>
-            {loadingStockes ? (
+            {loadingStockMen ? (
                 <FullPageLoader />
             ) : (
                 <Table
-                    data={Stockes}
+                    data={StockMen}
                     columns={Columns}
                     statusKey="status"
                     onEdit={(item) => handleEdit(item)}
@@ -129,7 +149,7 @@ const StockMan = () => {
                 open={isDeleteOpen}
                 onOpenChange={setIsDeleteOpen}
                 onDelete={handleDeleteConfirm}
-                name={selectedRow?.name}
+                name={selectedRow?.user_name}
                 isLoading={loadingDelete}
             />
         </div>

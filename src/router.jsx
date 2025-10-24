@@ -52,7 +52,7 @@ const router = createBrowserRouter([
         children: [
           { index: true, element: <StockMan /> },
           { path: "add", element: <AddStockMan /> },
-          { path: "edit/:stockId", element: <AddStockMan /> },
+          { path: "edit/:stockManId", element: <AddStockMan /> },
         ],
       },
 

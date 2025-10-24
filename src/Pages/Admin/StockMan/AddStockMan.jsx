@@ -8,73 +8,96 @@ import FullPageLoader from '@/components/Loading';
 
 const AddStockMan = ({ lang = 'en' }) => {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    const { stockId } = useParams();
+    const { stockManId } = useParams();
     const navigate = useNavigate();
     const location = useLocation();
 
-    const { postData: postNewData, loadingPost: loadingNewData, response: NewResponse } = usePost({ url: `${apiUrl}/admin/purchase_stores/add` });
-    const { postData, loadingPost, response: postResponse } = usePost({ url: `${apiUrl}/admin/purchase_stores/update/${stockId}` });
-    const { refetch: refetchBranches, loading: loadingBranches, data: dataBranches } = useGet({ url: `${apiUrl}/admin/purchase_stores` });
+    const { postData: postNewData, loadingPost: loadingNewData, response: NewResponse } = usePost({ url: `${apiUrl}/admin/purchase_store_man/add` });
+    const { postData, loadingPost, response: postResponse } = usePost({ url: `${apiUrl}/admin/purchase_store_man/update/${stockManId}` });
+    const { refetch: refetchStores, loading: loadingStores, data: dataStores } = useGet({ url: `${apiUrl}/admin/purchase_stores` });
 
-    const [Branches, setBranches] = useState([]);
+    const [Stores, setStores] = useState([]);
     const [values, setValues] = useState({});
 
     // Get the item data from navigation state
     const { state } = location;
     const itemData = state?.itemData;
 
-    // Determine if we're in "edit" mode based on whether stockId exists
-    const isEditMode = !!stockId;
-    const title = isEditMode ? 'Edit Stock' : 'Add Stock';
-
-    console.log(itemData)
+    // Determine if we're in "edit" mode based on whether stockManId exists
+    const isEditMode = !!stockManId;
+    const title = isEditMode ? 'Edit Stock Man' : 'Add Stock Man';
 
     useEffect(() => {
-        refetchBranches();
-    }, [refetchBranches]);
+        refetchStores();
+    }, [refetchStores]);
 
     useEffect(() => {
-        if (dataBranches && dataBranches?.branches) {
-            const formattedBranches = dataBranches.branches.map((branch) => ({
-                value: branch.id,
-                label: branch.name,
+        if (dataStores && dataStores?.stores) {
+            const formattedStores = dataStores.stores.map((store) => ({
+                value: store.id.toString() || "",
+                label: store.name,
             }));
-            setBranches(formattedBranches);
+            setStores(formattedStores);
         }
-    }, [dataBranches]);
+    }, [dataStores]);
 
     // Set initial values from navigation state when in edit mode
     useEffect(() => {
         if (isEditMode && itemData) {
-            // Extract just the branch IDs for the multi-select
-            const branchIds = itemData.branches?.map(branch => branch.id) || [];
             setValues({
                 id: itemData.id || '',
-                name: itemData.name || '',
-                location: itemData.location || '',
+                user_name: itemData.user_name || '',
+                phone: itemData.phone || '',
+                password: '', // Don't pre-fill password for security
+                store_id: itemData.store_id || itemData.store?.id || '',
                 status: itemData.status || "Active",
-                branches: branchIds, // Use just the IDs for the multi-select
+                image: itemData.image || null,
             });
         } else if (!isEditMode) {
             // Reset values for add mode
             setValues({
-                name: '',
-                location: '',
+                user_name: '',
+                phone: '',
+                password: '',
+                store_id: '',
                 status: "Active",
-                branches: [],
+                image: null,
             });
         }
     }, [isEditMode, itemData]);
 
     // Define the fields for the form
     const fields = [
-        { name: 'name', type: 'input', placeholder: 'Stock Name' },
-        { name: 'location', type: 'input', placeholder: 'Area' },
+        { 
+            name: 'user_name', 
+            type: 'input', 
+            placeholder: 'User Name',
+            required: true
+        },
+        { 
+            name: 'phone', 
+            type: 'input', 
+            placeholder: 'Phone Number',
+            inputType: 'tel'
+        },
+        { 
+            name: 'password', 
+            type: 'input', 
+            placeholder: 'Password',
+            inputType: 'password',
+            required: !isEditMode // Password required only for new users
+        },
         {
-            name: 'branches',
-            type: 'multi-select',
-            placeholder: 'Branches',
-            options: Branches,
+            name: 'store_id',
+            type: 'select',
+            placeholder: 'Select Store',
+            options: Stores,
+        },
+        {
+            name: 'image',
+            type: 'file',
+            placeholder: 'Profile Image',
+            accept: 'image/*'
         },
         {
             type: 'switch',
@@ -91,17 +114,27 @@ const AddStockMan = ({ lang = 'en' }) => {
     };
 
     const handleSubmit = async () => {
-        const data = {
-            name: values.name || '',
-            location: values.location || '',
-            branches: values.branches || [], // This should be an array of branch IDs
-            status: values.status?.toLowerCase() === "active" ? 1 : 0,
-        };
+        // Create FormData to handle file upload
+        const formData = new FormData();
+        
+        // Append all fields
+        formData.append('user_name', values.user_name || '');
+        formData.append('phone', values.phone || '');
+        if (values.password) {
+            formData.append('password', values.password);
+        }
+        formData.append('stora_id', values.store_id || '');
+        formData.append('status', values.status?.toLowerCase() === "active" ? 1 : 0);
+        
+        // Append image file if exists
+        if (values.image && typeof values.image !== 'string') {
+            formData.append('image', values.image);
+        }
 
         if (isEditMode) {
-            await postData(data, 'Stock Updated Successfully!');
+            await postData(formData, 'Stock Man Updated Successfully!');
         } else {
-            await postNewData(data, 'Stock Added Successfully!');
+            await postNewData(formData, 'Stock Man Added Successfully!');
         }
     };
 
@@ -114,22 +147,23 @@ const AddStockMan = ({ lang = 'en' }) => {
 
     const handleReset = () => {
         if (isEditMode && itemData) {
-            // Extract just the branch IDs for the multi-select
-            const branchIds = itemData.branches?.map(branch => branch.id) || [];
-
             setValues({
                 id: itemData.id || '',
-                name: itemData.name || '',
-                location: itemData.location || '',
+                user_name: itemData.user_name || '',
+                phone: itemData.phone || '',
+                password: '', // Reset password field
+                store_id: itemData.store_id || itemData.store?.id || '',
                 status: itemData.status || "Active",
-                branches: branchIds,
+                image: itemData.image || null,
             });
         } else {
             setValues({
-                name: '',
-                location: '',
+                user_name: '',
+                phone: '',
+                password: '',
+                store_id: '',
                 status: "Active",
-                branches: [],
+                image: null,
             });
         }
     };
@@ -171,7 +205,7 @@ const AddStockMan = ({ lang = 'en' }) => {
             </div>
 
             <div className="py-10 px-4 bg-white rounded-lg shadow-md">
-                {loadingBranches ? (
+                {loadingStores ? (
                     <FullPageLoader />
                 ) : (
                     <Add
