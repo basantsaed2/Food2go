@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 
 const ProtAuth = ({ children }) => {
   try {
-    const userLocal = JSON.parse(localStorage.getItem('admin'));
+    const userLocal = JSON.parse(localStorage.getItem('branch'));
     if (userLocal) {
       return <Navigate to="/" replace />;
     }

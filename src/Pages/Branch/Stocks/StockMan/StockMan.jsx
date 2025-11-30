@@ -8,65 +8,83 @@ import DeleteDialog from '@/components/DeleteDialog';
 import FullPageLoader from "@/components/Loading";
 import { FaPlus } from "react-icons/fa";
 import { Switch } from "@/components/ui/switch";
+import { useQueryClient } from "@tanstack/react-query";
+import { QUERY_KEYS } from '@/constants/queryKeys';
+import { store } from "@/Store/store";
 
 const StockMan = () => {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
-    const { refetch: refetchStockMen, loading: loadingStockMen, data: dataStockMen } = useGet({ url: `${apiUrl}/admin/purchase_store_man` });
-    const { loadingDelete, deleteData } = useDelete();
-    const { changeState, loadingChange } = useChangeState();
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
+
+    // FETCH STOCKS Man
+    const {
+        data,
+        isLoading: loadingStockMen,
+        isError,
+    } = useGet({
+        url: `${apiUrl}/branch/purchase_store_man`,
+        queryKey: QUERY_KEYS.STOCKMAN,
+    });
+
+    // MUTATIONS
+    const { deleteData, loadingDelete } = useDelete(QUERY_KEYS.STOCKMAN);
+    const { changeState, loadingChange } = useChangeState(QUERY_KEYS.STOCKMAN);
+
+    // LOCAL STATE
     const [isDeleteOpen, setIsDeleteOpen] = useState(false);
     const [selectedRow, setSelectedRow] = useState(null);
-    const [StockMen, setStockMen] = useState([]);
 
-    const navigate = useNavigate();
+    // FORMAT DATA
+    const stockMan = data?.store_men?.map((u) => ({
+        id: u.id,
+        user_name: u.user_name || "—",
+        phone: u.phone || "—",
+        store: u.store || {},
+        store_name: u.store?.name || "—",
+        status: u.status ? "Active" : "Inactive",
+        rawStatus: u.status,
+        image: u.image || null,
+    })) || [];
 
-    useEffect(() => {
-        refetchStockMen();
-    }, [refetchStockMen]);
-
-    useEffect(() => {
-        if (dataStockMen && dataStockMen.store_men) {
-            const formatted = dataStockMen.store_men.map((u) => ({
-                id: u.id,
-                user_name: u.user_name || "—",
-                phone: u.phone || "—",
-                store_name: u.store?.name || "—",
-                status: u.status ? "Active" : "Inactive",
-                rawStatus: u.status,
-                image: u.image || null,
-            }));
-            setStockMen(formatted);
-        }
-    }, [dataStockMen]);
-
-    const handleStatusChange = async (id, newStatus) => {
-        const url = `${apiUrl}/admin/purchase_store_man/status/${id}?status=${newStatus ? 1 : 0}`;
-        const successMessage = `${newStatus ? 'Activated' : 'Deactivated'} Successfully`;
-        
-        const success = await changeState(url, successMessage, {});
-        
-        if (success) {
-            setStockMen(prev => prev.map(item => 
-                item.id === id 
-                    ? { 
-                        ...item, 
-                        status: newStatus ? "Active" : "Inactive",
-                        rawStatus: newStatus 
-                    } 
-                    : item
-            ));
-        }
+    // HANDLERS
+    const handleStatusChange = (id, newStatus) => {
+        const url = `${apiUrl}/branch/purchase_store_man/status/${id}?status=${newStatus ? 1 : 0}`;
+        changeState({
+            url,
+            successMessage: `${newStatus ? 'Activated' : 'Deactivated'} Successfully`,
+        });
     };
 
+    const handleEdit = (item) => {
+        navigate(`edit/${item.id}`, { state: { itemData: item } });
+    };
+
+    const handleDelete = (item) => {
+        setSelectedRow(item);
+        setIsDeleteOpen(true);
+    };
+
+    const handleDeleteConfirm = () => {
+        if (!selectedRow) return;
+        deleteData({
+            url: `${apiUrl}/branch/purchase_stores/delete/${selectedRow.id}`,
+            successMessage: `${selectedRow.name} Deleted Successfully`,
+        });
+        setIsDeleteOpen(false);
+        setSelectedRow(null);
+    };
+
+    // COLUMNS
     const Columns = [
-        { 
-            key: "image", 
+        {
+            key: "image",
             label: "Image",
             renderCell: (item) => (
                 <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
                     {item.image ? (
-                        <img 
-                            src={item.image} 
+                        <img
+                            src={item.image}
                             alt={item.user_name}
                             className="w-full h-full object-cover"
                         />
@@ -81,8 +99,8 @@ const StockMan = () => {
         { key: "user_name", label: "User Name" },
         { key: "phone", label: "Phone" },
         { key: "store_name", label: "Store" },
-        { 
-            key: "status", 
+        {
+            key: "status",
             label: "Status",
             renderCell: (item) => (
                 <div className="flex items-center space-x-2">
@@ -99,28 +117,20 @@ const StockMan = () => {
         },
     ];
 
-    const handleEdit = (item) => navigate(`edit/${item.id}`, { state: { itemData: item } });
-
-    const handleDelete = (item) => {
-        setSelectedRow(item);
-        setIsDeleteOpen(true);
-    };
-
-    const handleDeleteConfirm = async () => {
-        if (!selectedRow) return;
-
-        const success = await deleteData(
-            `${apiUrl}/admin/purchase_store_man/delete/${selectedRow.id}`,
-            `${selectedRow.user_name} Deleted Successfully.`,
-            {}
+    // ERROR UI
+    if (isError) {
+        return (
+            <div className="p-4 text-center">
+                <p className="text-red-600">Failed to load stock man.</p>
+                <button
+                    onClick={() => queryClient.invalidateQueries({ queryKey: QUERY_KEYS.STOCKMAN })}
+                    className="mt-2 px-4 py-2 bg-red-600 text-white rounded"
+                >
+                    Retry
+                </button>
+            </div>
         );
-
-        if (success) {
-            setIsDeleteOpen(false);
-            setStockMen((prev) => prev.filter((item) => item.id !== selectedRow.id));
-            setSelectedRow(null);
-        }
-    };
+    }
 
     return (
         <div className="p-4">
@@ -137,7 +147,7 @@ const StockMan = () => {
                 <FullPageLoader />
             ) : (
                 <Table
-                    data={StockMen}
+                    data={stockMan}
                     columns={Columns}
                     statusKey="status"
                     onEdit={(item) => handleEdit(item)}

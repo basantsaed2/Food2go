@@ -18,14 +18,23 @@ import { RiSecurePaymentFill } from "react-icons/ri";
 import logo from "@/assets/Logo.jpeg"
 import { FaUsers } from "react-icons/fa6";
 import { TbWorldCheck } from "react-icons/tb";
+import { MdProductionQuantityLimits } from "react-icons/md";
 
 const navItems = [
     { label: "Home", to: "/", icon: <AiOutlineHome className="stroke-2" size={20} /> },
-    { label: "Stock", to: "/stock", icon: <PackagePlus className="stroke-2" size={20} /> },
-    { label: "Stock Man", to: "/stock_man", icon: <UserLock className="stroke-2" size={20} /> },
+    {
+        label: "Stock",
+        icon: <PackagePlus className="stroke-2" size={20} />,
+        subItems: [
+            { label: "Stock List", to: "/stock/list", icon: <Grid2X2Check className="stroke-2" size={18} /> },
+            { label: "Stock Man", to: "/stock/man", icon: <UserLock className="stroke-2" size={18} /> },
+            { label: "Stock Category", to: "/stock/category", icon: <LayoutTemplate className="stroke-2" size={18} /> },
+            { label: "Stock Product", to: "/stock/product", icon: <MdProductionQuantityLimits size={18} /> },
+        ],
+    },
 ];
 
-export function AdminSidebar() {
+export function BranchSidebar() {
     const location = useLocation();
     const { i18n } = useTranslation();
     const isRTL = i18n.dir() === "rtl";
@@ -63,7 +72,7 @@ export function AdminSidebar() {
         if (item.to === "/") {
             return location.pathname === "/";
         } else if (item.subItems) {
-            return item.subItems.some((sub) => 
+            return item.subItems.some((sub) =>
                 location.pathname === sub.to || location.pathname.startsWith(sub.to + '/')
             );
         } else if (item.to) {
@@ -72,12 +81,12 @@ export function AdminSidebar() {
                 .filter(nav => nav.to && !nav.subItems)
                 .map(nav => nav.to)
                 .sort((a, b) => b.length - a.length); // Sort by length descending to match longest paths first
-            
+
             // Find the best matching path
-            const bestMatch = allTopLevelPaths.find(path => 
+            const bestMatch = allTopLevelPaths.find(path =>
                 location.pathname === path || location.pathname.startsWith(path + '/')
             );
-            
+
             // Only activate if this item is the best match
             return bestMatch === item.to;
         }
@@ -145,8 +154,8 @@ export function AdminSidebar() {
                                         {item.subItems && isExpanded && (
                                             <div className="!ml-6 mt-3 flex flex-col gap-2">
                                                 {item.subItems.map((subItem) => {
-                                                    const isSubActive = location.pathname === subItem.to || 
-                                                                       location.pathname.startsWith(subItem.to + '/');
+                                                    const isSubActive = location.pathname === subItem.to ||
+                                                        location.pathname.startsWith(subItem.to + '/');
                                                     return (
                                                         <Link
                                                             to={subItem.to}

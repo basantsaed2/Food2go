@@ -3,7 +3,7 @@ import { Navigate } from 'react-router-dom';
 
 const ProtectedRoute = ({ children }) => {
   try {
-    const user = JSON.parse(localStorage.getItem('admin'));
+    const user = JSON.parse(localStorage.getItem('branch'));
     if (!user) {
       return <Navigate to="/login" replace />;
     }

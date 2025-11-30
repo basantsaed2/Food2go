@@ -20,7 +20,7 @@ const ControlPanel = () => {
     });
 
     const { refetch: refetchHomeList, loading: loadingHomeList, data: HomeListData } = useGet({
-        url: `${apiUrl}/admin/homePage`,
+        url: `${apiUrl}/branch/homePage`,
     });
     const { t } = useTranslation();
 
