@@ -9,7 +9,7 @@ const CartsOrderSection = ({ ordersNum }) => {
 
     return (
         <>
-            <div className="flex flex-wrap items-start justify-center w-full gap-4 mt-4 sm:flex-col lg:flex-row">
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-2 p-4">
                 <Cart
                     route={'/dashboard/orders/pending'}
                     icon={<PendingIcon />}

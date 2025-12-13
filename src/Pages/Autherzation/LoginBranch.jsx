@@ -34,15 +34,19 @@ const LoginBranch = () => {
     if (branch && token) {
       try {
         const user = JSON.parse(branch);
+        // Ensure user is 'branch' before redirecting
         if (user.role === "branch" && user.token === token) {
           dispatch(setUser(user));
           navigate("/", { replace: true });
+        } else {
+          // If a non-branch user is somehow logged in, clear their session for safety
+          localStorage.clear();
         }
       } catch {
         localStorage.clear();
       }
     }
-  }, []);
+  }, [dispatch, navigate]);
 
   const handleLogin = (e) => {
     e.preventDefault();
@@ -58,21 +62,49 @@ const LoginBranch = () => {
     formData.append("email", email);
     formData.append("password", password);
 
+    // 1. REMOVE 'successMessage' from the postData options
     postData(formData, {
-      successMessage: "Login successful!",
+      // successMessage: "Login successful!", <--- REMOVED THIS LINE
       onSuccess: (data) => {
         const branch = data?.admin;
+
+        // 🚨 CRITICAL CHECK: Enforce login only for 'branch' role
+        if (branch?.role !== "branch") {
+          const roleError = "Access Denied: Only Branch accounts can log in here.";
+          setErrors({ general: roleError });
+
+          // 2. SHOW ERROR TOAST IF ROLE IS WRONG
+          toast.error(roleError);
+          return; // Stop the login process
+        }
+
+        // Proceed only if role is 'branch' and token exists
         if (branch?.token) {
+          // 3. SHOW SUCCESS TOAST ONLY IF ROLE IS CORRECT
+          toast.success("Login successful!");
+
           dispatch(setUser(branch));
           localStorage.setItem("branch", JSON.stringify(branch));
           localStorage.setItem("token", branch.token);
 
           const redirect = new URLSearchParams(location.search).get("redirect");
           navigate(redirect || "/", { replace: true });
+        } else {
+          // Fallback error if role is right but token is missing
+          setErrors({ general: "Login failed: Authentication token is missing." });
+          toast.error("An unexpected error occurred during login.");
         }
+      },
+      onError: (error) => {
+        // Generic error handling for API failures (405, 401, etc.)
+        const errorMessage = error?.message || "Login failed. Please check your credentials and try again.";
+        setErrors({ general: errorMessage });
+        toast.error(errorMessage);
       },
     });
   };
+
+  // ... (rest of the component)
 
   const togglePasswordVisibility = () => {
     setShowPassword((prev) => !prev);
@@ -155,9 +187,9 @@ const LoginBranch = () => {
                 )}
               </div>
 
-              {/* General Error */}
+              {/* General Error (for API/Role issues) */}
               {errors.general && (
-                <div className="p-3 bg-bg-third text-red-700 rounded-lg text-sm">
+                <div className="p-3 bg-red-100 text-red-700 border border-red-300 rounded-lg text-sm">
                   {errors.general}
                 </div>
               )}
