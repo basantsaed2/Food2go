@@ -1,67 +1,45 @@
-import React, { useEffect, useState } from "react";
-import CartsOrderSection from "../Orders/AllOrders/CartsOrderSection";
-import { LoaderLogin } from "../../../../Components/Components";
-import { OrdersComponent } from "../../../../Store/CreateSlices";
-import { useGet } from "../../../../Hooks/useGet";
+import React from "react";
+import CartsOrderSection from "../../../components/CartsOrderSection";
 import Chart from "./Charts/Chart";
 import FooterCard from "./FooterHome/FooterCard";
 import { useTranslation } from "react-i18next";
+import Loading from "../../../components/Loading";
+import { useGet } from "@/Hooks/UseGet";
 
 const HomePage = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const apiUrl = import.meta.env.VITE_API_BASE_URL;
 
-  // ✅ Home chart
+  // 1. Fetch Home chart data (for statistics, recent orders, etc.)
   const {
-    refetch: refetchChart,
-    loading: loadingChart,
+    isLoading: loadingChart,
     data: dataCharts,
   } = useGet({
-    url: `${apiUrl}/branch/home`
+    url: `${apiUrl}/branch/home`,
+    queryKey: ['homeChartData'],
   });
 
-  // ✅ Orders summary
+  // 2. Fetch Orders summary data (for counter cards)
   const {
-    refetch: refetchOrders,
-    loading: loadingOrders,
+    isLoading: loadingOrders,
     data: dataOrders,
   } = useGet({
-    url: `${apiUrl}/branch/home/online_order`
+    url: `${apiUrl}/branch/home/orders_count`,
+    queryKey: ['onlineOrdersSummary'],
   });
 
-  const [dataHome, setDataHome] = useState([]);
-  const [order_statistics, setOrder_statistics] = useState({})
-  const [earning_statistics, setEarning_statistics] = useState({})
-  const [orders, setOrders] = useState({})
-  const [recent_orders, setRecent_orders] = useState([])
-  const [offers, setOffers] = useState([])
-  const [topSelling, SetTopSelling] = useState([])
-  const [topCustomers, setTopCustomers] = useState({})
-  const [showSMSMessage, setShowSMSMessage] = useState(false);
+  // Combine loading states for the entire page
+  const isLoading = loadingChart || loadingOrders;
 
-  useEffect(() => {
-    refetchChart();
-    refetchOrders();
-  }, [refetchChart, refetchOrders]);
+  // --- Data Destructuring (Directly from dataCharts) ---
+  const order_statistics = dataCharts?.order_statistics || {};
+  const earning_statistics = dataCharts?.earning_statistics || {};
+  const recent_orders = dataCharts?.recent_orders || [];
+  const offers = dataCharts?.offers || [];
+  const topSelling = dataCharts?.top_selling || [];
+  const topCustomers = dataCharts?.top_customers || {};
 
-  useEffect(() => {
-    if (dataCharts) {
-      setDataHome(dataCharts);
-      setOrder_statistics(dataCharts.order_statistics)
-      setEarning_statistics(dataCharts.earning_statistics)
-      setRecent_orders(dataCharts.recent_orders)
-      setOffers(dataCharts.offers)
-      SetTopSelling(dataCharts.top_selling)
-      setTopCustomers(dataCharts.top_customers)
-    }
-  }, [dataCharts, dataHome, order_statistics]);
-
-  useEffect(() => {
-    if (dataOrders?.msg_package !== false) {
-      setShowSMSMessage(true);
-    }
-  }, [dataOrders]);
-
+  // --- Counter Calculation (Directly from dataOrders) ---
   const counters = {
     ordersAll: dataOrders?.orders || 0,
     ordersPending: dataOrders?.pending || 0,
@@ -76,9 +54,14 @@ const HomePage = () => {
     ordersRefund: dataOrders?.refund || 0,
   };
 
+  // The condition for showing the SMS message card
+  const showSMSMessage = dataOrders?.msg_package !== false;
+
   const renderSMSMessageCard = () => {
+    // Check both conditions (showSMSMessage condition and data existence)
     if (!showSMSMessage || !dataOrders?.msg_package) return null;
 
+    // Existing Card JSX...
     return (
       <div className="w-full rounded-xl bg-white py-3 px-4 border border-gray-300 shadow-lg mb-6">
         <div className="flex items-center justify-between pb-1 mb-4 border-b-2">
@@ -112,7 +95,6 @@ const HomePage = () => {
               </div>
             </div>
           </div>
-
         </div>
       </div>
     );
@@ -120,36 +102,43 @@ const HomePage = () => {
 
   return (
     <>
-      <OrdersComponent />
       <div className="flex flex-col w-full mb-0">
-        {(loadingOrders) ? (
-          <>
-            <div className="flex items-center justify-center w-full">
-              <LoaderLogin />
-            </div>
-          </>
+        {isLoading ? ( // Check the combined loading state
+          <div className="flex items-center justify-center w-full">
+            <Loading />
+          </div>
         ) : (
-          <>
-            <div className="flex flex-col items-start justify-center w-full gap-7 pb-28">
+          <div className="flex flex-col items-start justify-center w-full gap-7 pb-28">
+            <CartsOrderSection ordersNum={counters} />
 
-              <CartsOrderSection ordersNum={counters} />
+            <div className="flex flex-col items-start justify-center w-full px-4 gap-7">
+              {/* <Chart
+                order_statistics={order_statistics}
+                earning_statistics={earning_statistics}
+                recent_orders={recent_orders}
+              /> */}
+              <div className="flex flex-wrap items-center justify-between w-full gap-5">
+                {renderSMSMessageCard()}
 
-              <div className="flex flex-col items-start justify-center w-full px-4 gap-7">
-                <Chart
-                  order_statistics={order_statistics}
-                  earning_statistics={earning_statistics}
-                  recent_orders={recent_orders}
-                  orders={orders}
+                <FooterCard
+                  title={t("TopSellingProducts")}
+                  link="/dashboard/setup_product/product"
+                  layout={"TopSelling"}
+                  topCustomers={topCustomers}
+                  topSelling={topSelling}
+                  offers={offers}
                 />
-                <div className="flex flex-wrap items-center justify-between w-full gap-5">
-                  {renderSMSMessageCard()}
-
-                  <FooterCard title={t("TopSellingProducts")} link="/dashboard/setup_product/product" layout={"TopSelling"} topCustomers={topCustomers} topSelling={topSelling} offers={offers} />
-                  <FooterCard title={t("TopCustomer")} link="/dashboard/users/customers" layout={"default"} topCustomers={topCustomers} topSelling={topSelling} offers={offers} />
-                </div>
+                <FooterCard
+                  title={t("TopCustomer")}
+                  link="/dashboard/users/customers"
+                  layout={"default"}
+                  topCustomers={topCustomers}
+                  topSelling={topSelling}
+                  offers={offers}
+                />
               </div>
             </div>
-          </>
+          </div>
         )}
       </div>
     </>

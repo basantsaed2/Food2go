@@ -6,7 +6,7 @@ import LoginBranch from "./Pages/Autherzation/LoginBranch";
 import NotFound from "./Pages/NotFound";
 import ProtectedRoute from "./Auth/ProtectedRoute";
 import AuthLayout from "./Layout/AuthLayout";
-import Home from "./Pages/Branch/Home/Home";
+import HomePage from "./Pages/Branch/Home/HomePage";
 import Stock from "./Pages/Branch/Stocks/StockList/StockList";
 import AddStock from "./Pages/Branch/Stocks/StockList/AddStockList";
 import StockMan from "./Pages/Branch/Stocks/StockMan/StockMan";
@@ -15,6 +15,7 @@ import StockProduct from "./Pages/Branch/Stocks/StockProduct/StockProduct";
 import AddStockProduct from "./Pages/Branch/Stocks/StockProduct/AddStockProduct";
 import StockCategory from "./Pages/Branch/Stocks/StockCategory/StockCategory";
 import AddStockCategory from "./Pages/Branch/Stocks/StockCategory/AddStockCategory";
+import Cashier from "./Pages/Branch/Cashier/Cashier";
 
 const router = createBrowserRouter([
   {
@@ -41,7 +42,11 @@ const router = createBrowserRouter([
     children: [
       {
         path: "/",
-        element: <Home />,
+        element: <HomePage />,
+      },
+      {
+        path: "cashier",
+        element: <Cashier />,
       },
       {
         path: "stock",

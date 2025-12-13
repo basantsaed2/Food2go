@@ -32,7 +32,7 @@ function Table({
   );
   const [isFilterOpen, setIsFilterOpen] = React.useState(false);
   const [currentPage, setCurrentPage] = React.useState(0);
-  const rowsPerPage = 15;
+  const rowsPerPage = 10;
 
   // Initialize selectedFilters with default title values for each filterKey
   const initialFilters = React.useMemo(() => {
@@ -87,6 +87,7 @@ function Table({
     setCurrentPage(0);
   };
 
+  // Keep this logic to reset filter when clicking on the default option
   const handleFilterClick = (key) => {
     setSelectedFilters((prev) => ({
       ...prev,
@@ -97,23 +98,23 @@ function Table({
 
   const filteredData = data
     ? data.filter((item) => {
-        const matchesSearch =
-          searchTerm === ""
-            ? true
-            : item[selectedColumn]
-                ?.toString()
-                .toLowerCase()
-                .includes(searchTerm.toLowerCase());
-        const matchesFilters = filterKeys.length > 0
-          ? filterKeys.every((key) => {
-              const filterValue = selectedFilters[key];
-              const title = titles[key] || key.charAt(0).toUpperCase() + key.slice(1);
-              if (filterValue === title) return true;
-              return item[key]?.trim() === filterValue;
-            })
-          : true;
-        return matchesSearch && matchesFilters;
-      })
+      const matchesSearch =
+        searchTerm === ""
+          ? true
+          : item[selectedColumn]
+            ?.toString()
+            .toLowerCase()
+            .includes(searchTerm.toLowerCase());
+      const matchesFilters = filterKeys.length > 0
+        ? filterKeys.every((key) => {
+          const filterValue = selectedFilters[key];
+          const title = titles[key] || key.charAt(0).toUpperCase() + key.slice(1);
+          if (filterValue === title) return true;
+          return item[key]?.trim() === filterValue;
+        })
+        : true;
+      return matchesSearch && matchesFilters;
+    })
     : [];
 
   // Pagination logic
@@ -132,10 +133,13 @@ function Table({
   };
 
   return (
-    <div className={cn("w-full p-4 bg-white rounded-lg shadow-sm", className)} {...props}>
+    <div
+      className={cn("w-full p-6 bg-white rounded-xl shadow-lg font-sans", className)}
+      {...props}
+    >
       {/* Header with search, filters and actions */}
       <div className="mb-6 flex flex-col gap-4">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">          
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             {onExport && (
               <TooltipProvider>
@@ -145,7 +149,7 @@ function Table({
                       variant="outline"
                       size="icon"
                       onClick={onExport}
-                      className="h-10 w-10 border-gray-300"
+                      className="h-10 w-10 border-gray-300 text-gray-700 hover:bg-gray-100/50 transition-all"
                     >
                       <Download size={18} />
                     </Button>
@@ -156,20 +160,33 @@ function Table({
                 </Tooltip>
               </TooltipProvider>
             )}
+            {filterKeys.length > 0 && (
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => setIsFilterOpen(!isFilterOpen)}
+                className={cn(
+                  "h-10 w-10 border-gray-300 transition-all",
+                  isFilterOpen ? "bg-blue-50 text-blue-600 border-blue-400 hover:bg-blue-100" : "text-gray-700 hover:bg-gray-100/50"
+                )}
+              >
+                <Filter size={18} />
+              </Button>
+            )}
           </div>
         </div>
 
         {/* Search and Filter Section */}
-        <div className="mb-4">
-          {/* Desktop Layout: Horizontal */}
+        <div className="mb-2">
+          {/* Desktop Layout: Horizontal Search/Filter */}
           <div className="hidden xl:flex xl:flex-row xl:items-center xl:justify-between gap-4">
-            <div className="flex items-center gap-2 flex-1 max-w-md">
+            <div className="flex items-center gap-2 flex-1 max-w-lg">
               <Combobox
                 value={selectedColumn}
                 onValueChange={handleColumnChange}
                 options={columnOptions}
-                placeholder="Select column"
-                className="w-[200px] bg-gray-50 border-gray-200 rounded-md text-gray-700 font-medium"
+                placeholder="Search Column"
+                className="w-[180px] bg-white border-gray-300 rounded-lg text-gray-700 text-base font-medium"
               />
               <div className="relative flex-1">
                 <Input
@@ -177,7 +194,7 @@ function Table({
                   placeholder={`Search by ${columns.find((col) => col.key === selectedColumn)?.label || "column"}...`}
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  className="pl-10 pr-4 py-2 w-full border-gray-200 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 w-full border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-base"
                 />
                 <Search
                   size={18}
@@ -185,39 +202,49 @@ function Table({
                 />
               </div>
             </div>
-            <div className="flex flex-row gap-2">
-              {filterKeys.length > 0 &&
-                filterKeys.map((key) => (
-                  <Combobox
-                    key={key}
-                    value={
-                      selectedFilters[key] ||
-                      (titles[key] || key.charAt(0).toUpperCase() + key.slice(1))
-                    }
-                    onValueChange={handleFilterChange(key)}
-                    onClick={() => handleFilterClick(key)}
-                    options={
-                      filterValues[key]?.map((value) => ({
-                        value,
-                        label: value,
-                      })) || []
-                    }
-                    placeholder={titles[key] || key.charAt(0).toUpperCase() + key.slice(1)}
-                    className="w-[180px] bg-gray-50 border-gray-200 rounded-md text-gray-700 font-medium"
-                  />
-                ))}
-            </div>
+
+            <AnimatePresence>
+              {isFilterOpen && (
+                <motion.div
+                  initial={{ width: 0, opacity: 0 }}
+                  animate={{ width: "auto", opacity: 1 }}
+                  exit={{ width: 0, opacity: 0 }}
+                  transition={{ duration: 0.3, ease: "easeInOut" }}
+                  className="flex flex-row gap-3 overflow-hidden"
+                >
+                  {filterKeys.map((key) => (
+                    <Combobox
+                      key={key}
+                      value={
+                        selectedFilters[key] ||
+                        (titles[key] || key.charAt(0).toUpperCase() + key.slice(1))
+                      }
+                      onValueChange={handleFilterChange(key)}
+                      onClick={() => handleFilterClick(key)}
+                      options={
+                        filterValues[key]?.map((value) => ({
+                          value,
+                          label: value,
+                        })) || []
+                      }
+                      placeholder={titles[key] || key.charAt(0).toUpperCase() + key.slice(1)}
+                      className="w-[180px] bg-white border-gray-300 rounded-lg text-gray-700 text-base font-medium"
+                    />
+                  ))}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
 
           {/* Mobile Layout: Collapsible Filter Panel */}
           <div className="xl:hidden">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 mb-3">
               <Combobox
                 value={selectedColumn}
                 onValueChange={handleColumnChange}
                 options={columnOptions}
-                placeholder="Select column"
-                className="w-[140px] bg-gray-50 border-gray-200 rounded-md text-gray-700 font-medium"
+                placeholder="Search Column"
+                className="w-[140px] bg-white border-gray-300 rounded-lg text-gray-700 text-base font-medium"
               />
               <div className="relative flex-1">
                 <Input
@@ -225,21 +252,13 @@ function Table({
                   placeholder={`Search...`}
                   value={searchTerm}
                   onChange={handleSearchChange}
-                  className="pl-10 pr-4 py-2 w-full border-gray-200 rounded-md"
+                  className="pl-10 pr-4 py-2 w-full border-gray-300 rounded-lg text-base"
                 />
                 <Search
                   size={18}
                   className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
                 />
               </div>
-              {/* <Button
-                variant="outline"
-                size="icon"
-                onClick={() => setIsFilterOpen(!isFilterOpen)}
-                className="flex-shrink-0 h-10 w-10 border-gray-200"
-              >
-                <Filter size={18} />
-              </Button> */}
             </div>
 
             <AnimatePresence>
@@ -251,6 +270,7 @@ function Table({
                   transition={{ duration: 0.3, ease: "easeInOut" }}
                   className="mt-2 overflow-hidden bg-gray-50 border border-gray-200 rounded-lg p-4"
                 >
+                  <p className="text-base font-semibold text-gray-600 mb-3">Active Filters</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     {filterKeys.map((key) => (
                       <Combobox
@@ -268,7 +288,7 @@ function Table({
                           })) || []
                         }
                         placeholder={titles[key] || key.charAt(0).toUpperCase() + key.slice(1)}
-                        className="w-full bg-white border-gray-200 rounded-md text-gray-700 font-medium"
+                        className="w-full bg-white border-gray-300 rounded-lg text-gray-700 text-base font-medium"
                       />
                     ))}
                   </div>
@@ -283,42 +303,42 @@ function Table({
       <div data-slot="table-container" className="relative w-full overflow-x-auto rounded-lg border border-gray-200">
         <table
           data-slot="table"
-          className={cn("w-full caption-bottom text-sm", className)}
+          className={cn("w-full caption-bottom text-base font-sans", className)}
           {...props}
         >
           <TableHeader>
             <TableRow className="border-b border-gray-200 bg-gray-50 hover:bg-gray-50">
               {columns.map((col) => (
-                <TableHead key={col.key} className="py-3 font-semibold text-gray-700">
+                <TableHead key={col.key} className="py-4 text-base font-bold text-gray-800 tracking-tight">
                   {col.label}
                 </TableHead>
               ))}
               {actionsButtons && (
-                <TableHead className="py-3 font-semibold text-gray-700 text-center">Actions</TableHead>
+                <TableHead className="py-4 text-base font-bold text-gray-800 text-center tracking-tight">Actions</TableHead>
               )}
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredData.length === 0 ? (
               <TableRow>
-                <TableCell 
-                  colSpan={columns.length + (actionsButtons ? 1 : 0)} 
-                  className="text-center py-8 text-gray-500"
+                <TableCell
+                  colSpan={columns.length + (actionsButtons ? 1 : 0)}
+                  className="text-center py-12 text-gray-500"
                 >
                   <div className="flex flex-col items-center justify-center">
-                    <div className="rounded-full bg-gray-100 p-3 mb-3">
-                      <Search size={24} className="text-gray-400" />
+                    <div className="rounded-full bg-gray-100 p-4 mb-4">
+                      <Search size={28} className="text-gray-400" />
                     </div>
-                    <p className="font-medium">No data found</p>
-                    <p className="text-sm mt-1">Try adjusting your search or filter criteria</p>
+                    <p className="text-lg font-bold text-gray-700">No results found</p>
+                    <p className="text-base mt-1 text-gray-500">Try adjusting your search or filter criteria.</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : (
               paginatedData.map((item, index) => (
-                <TableRow key={index} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                <TableRow key={index} className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors">
                   {columns.map((col) => (
-                    <TableCell className="py-3" key={col.key}>
+                    <TableCell className="py-4" key={col.key}>
                       {/* Check if column has a custom renderCell function */}
                       {col.renderCell ? (
                         col.renderCell(item)
@@ -330,15 +350,15 @@ function Table({
                         renderReasonCell(item)
                       ) : col.key === "img" ? (
                         item[col.key] && item[col.key] !== "—" ? (
-                          <Avatar className="w-10 h-10">
+                          <Avatar className="w-10 h-10 border border-gray-200">
                             <AvatarImage src={item[col.key]} alt={item.name} />
-                            <AvatarFallback className="bg-blue-100 text-blue-600">
+                            <AvatarFallback className="bg-blue-100 text-blue-600 font-bold text-base">
                               {item.name?.charAt(0) || ""}
                             </AvatarFallback>
                           </Avatar>
                         ) : (
-                          <Avatar className="w-10 h-10 bg-gray-100">
-                            <AvatarFallback className="text-gray-600">
+                          <Avatar className="w-10 h-10 bg-gray-100 border border-gray-200">
+                            <AvatarFallback className="text-gray-600 font-bold text-base">
                               {item.name?.charAt(0) || "—"}
                             </AvatarFallback>
                           </Avatar>
@@ -347,25 +367,25 @@ function Table({
                         <Badge
                           variant="outline"
                           className={cn(
-                            "font-medium",
+                            "font-bold text-base py-1.5 px-3 uppercase tracking-wider",
                             item[col.key] === "verified" || item[col.key] === "Active" || item[col.key] === "active"
-                              ? "bg-green-50 text-green-700 border-green-200"
+                              ? "bg-green-100 text-green-800 border-green-400"
                               : item[col.key] === "unverified" || item[col.key] === "Inactive" || item[col.key] === "inactive"
-                                ? "bg-red-50 text-red-700 border-red-200"
+                                ? "bg-red-100 text-red-800 border-red-400"
                                 : item[col.key] === "pending"
-                                  ? "bg-yellow-50 text-yellow-700 border-yellow-200"
-                                  : "bg-gray-50 text-gray-700 border-gray-200"
+                                  ? "bg-yellow-100 text-yellow-800 border-yellow-400"
+                                  : "bg-gray-100 text-gray-800 border-gray-400"
                           )}
                         >
                           {item[col.key]}
                         </Badge>
                       ) : (
-                        <span className="text-gray-700">{item[col.key] || "—"}</span>
+                        <span className="text-gray-900 font-medium text-base">{item[col.key] || "—"}</span>
                       )}
                     </TableCell>
                   ))}
                   {actionsButtons && (
-                    <TableCell className="py-3">
+                    <TableCell className="py-4">
                       <div className="flex justify-center space-x-1">
                         {onView && (
                           <TooltipProvider>
@@ -375,9 +395,9 @@ function Table({
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => onView && onView(item)}
-                                  className="h-8 w-8 text-gray-500 hover:text-blue-600 hover:bg-blue-50"
+                                  className="h-10 w-10 text-gray-600 hover:text-blue-700 hover:bg-blue-100/50"
                                 >
-                                  <Eye size={16} />
+                                  <Eye size={18} />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
@@ -394,9 +414,9 @@ function Table({
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => onEdit && onEdit(item)}
-                                  className="h-8 w-8 text-gray-500 hover:text-green-600 hover:bg-green-50"
+                                  className="h-10 w-10 text-gray-600 hover:text-green-700 hover:bg-green-100/50"
                                 >
-                                  <Edit size={16} />
+                                  <Edit size={18} />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
@@ -413,9 +433,9 @@ function Table({
                                   variant="ghost"
                                   size="icon"
                                   onClick={() => onDelete && onDelete(item)}
-                                  className="h-8 w-8 text-gray-500 hover:text-red-600 hover:bg-red-50"
+                                  className="h-10 w-10 text-gray-600 hover:text-red-700 hover:bg-red-100/50"
                                 >
-                                  <Trash2 size={16} />
+                                  <Trash2 size={18} />
                                 </Button>
                               </TooltipTrigger>
                               <TooltipContent>
@@ -437,7 +457,7 @@ function Table({
       {/* Pagination Controls */}
       {filteredData.length > rowsPerPage && (
         <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6">
-          <div className="text-sm text-gray-500">
+          <div className="text-base text-gray-700 font-semibold">
             Showing {currentPage * rowsPerPage + 1} to {Math.min((currentPage + 1) * rowsPerPage, filteredData.length)} of {filteredData.length} entries
           </div>
           <div className="flex gap-2">
@@ -445,46 +465,45 @@ function Table({
               variant="outline"
               onClick={handlePrevious}
               disabled={currentPage === 0}
-              className="flex items-center gap-1 px-3 py-2 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="flex items-center gap-1 px-4 py-2 border-gray-300 text-gray-700 font-medium hover:bg-gray-100 disabled:opacity-50 transition-colors"
             >
-              <ChevronLeft size={16} />
+              <ChevronLeft size={18} />
               Previous
             </Button>
             <div className="flex items-center gap-1">
-              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                // Show pages around current page
-                let pageNum;
-                if (totalPages <= 5) {
-                  pageNum = i;
-                } else if (currentPage <= 2) {
-                  pageNum = i;
-                } else if (currentPage >= totalPages - 3) {
-                  pageNum = totalPages - 5 + i;
-                } else {
-                  pageNum = currentPage - 2 + i;
-                }
-                
-                return (
-                  <Button
-                    key={pageNum}
-                    variant={currentPage === pageNum ? "default" : "outline"}
-                    onClick={() => setCurrentPage(pageNum)}
-                    className={`h-9 w-9 p-0 ${currentPage === pageNum ? "bg-blue-600 text-white" : "border-gray-300 text-gray-700"}`}
-                  >
-                    {pageNum + 1}
-                  </Button>
-                );
-              })}
-              {totalPages > 5 && <span className="px-1 text-gray-500">...</span>}
+              {/* Simplified Pagination Button Logic for clarity and visual appeal */}
+              {Array.from({ length: totalPages }, (_, i) => i)
+                .filter(i =>
+                  i === 0 ||
+                  i === totalPages - 1 ||
+                  (i >= currentPage - 1 && i <= currentPage + 1)
+                )
+                .map((pageNum, index, arr) => {
+                  const nextItem = arr[index + 1];
+                  const showEllipsis = nextItem !== undefined && nextItem > pageNum + 1;
+
+                  return (
+                    <React.Fragment key={pageNum}>
+                      <Button
+                        variant={currentPage === pageNum ? "default" : "outline"}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`h-10 w-10 p-0 text-base font-bold transition-colors ${currentPage === pageNum ? "bg-red-600 text-white hover:bg-red-700" : "border-gray-300 text-gray-700 hover:bg-gray-100"}`}
+                      >
+                        {pageNum + 1}
+                      </Button>
+                      {showEllipsis && <span className="px-1 text-gray-500 font-medium">...</span>}
+                    </React.Fragment>
+                  );
+                })}
             </div>
             <Button
               variant="outline"
               onClick={handleNext}
               disabled={currentPage >= totalPages - 1}
-              className="flex items-center gap-1 px-3 py-2 border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+              className="flex items-center gap-1 px-4 py-2 border-gray-300 text-gray-700 font-medium hover:bg-gray-100 disabled:opacity-50 transition-colors"
             >
               Next
-              <ChevronRight size={16} />
+              <ChevronRight size={18} />
             </Button>
           </div>
         </div>
@@ -498,7 +517,7 @@ function TableHeader({ className, ...props }) {
   return (
     <thead
       data-slot="table-header"
-      className={cn("[&_tr]:border-b bg-gray-50", className)}
+      className={cn("[&_tr]:border-b bg-gray-100", className)}
       {...props}
     />
   );
@@ -519,7 +538,7 @@ function TableRow({ className, ...props }) {
     <tr
       data-slot="table-row"
       className={cn(
-        "hover:bg-muted/50 data-[state=selected]:bg-muted border-b border-gray-100 transition-colors",
+        "data-[state=selected]:bg-muted border-b border-gray-100 transition-colors",
         className
       )}
       {...props}
@@ -532,7 +551,7 @@ function TableHead({ className, ...props }) {
     <th
       data-slot="table-head"
       className={cn(
-        "h-10 px-4 text-left align-middle font-medium text-gray-700 whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "h-12 px-4 text-left align-middle text-base font-bold text-gray-900 whitespace-nowrap tracking-tight",
         className
       )}
       {...props}
@@ -545,7 +564,7 @@ function TableCell({ className, ...props }) {
     <td
       data-slot="table-cell"
       className={cn(
-        "p-4 align-middle whitespace-nowrap [&:has([role=checkbox])]:pr-0 [&>[role=checkbox]]:translate-y-[2px]",
+        "p-4 align-middle whitespace-nowrap text-base text-gray-900 font-medium",
         className
       )}
       {...props}

@@ -22,6 +22,7 @@ import { MdProductionQuantityLimits } from "react-icons/md";
 
 const navItems = [
     { label: "Home", to: "/", icon: <AiOutlineHome className="stroke-2" size={20} /> },
+    { label: "Cashier", to: "/cashier", icon: <UserLock className="stroke-2" size={20} /> },
     {
         label: "Stock",
         icon: <PackagePlus className="stroke-2" size={20} />,

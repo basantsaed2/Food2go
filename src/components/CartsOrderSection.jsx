@@ -1,7 +1,8 @@
-import { Cart } from '../../../../../Components/Components'
-import { CanceledIcon, ConfirmedIcon, DeliveredIcon, FailedToDeliverIcon, OutForDeliveryIcon, PendingIcon, ReturnedIcon, ProcessingIcon } from '../../../../../Assets/Icons/AllIcons'
+
+import { CanceledIcon, ConfirmedIcon, DeliveredIcon, FailedToDeliverIcon, OutForDeliveryIcon, PendingIcon, ReturnedIcon, ProcessingIcon } from './Icons/AllIcons'
 import { RiRefund2Line } from "react-icons/ri";
 import { useTranslation } from "react-i18next";
+import Cart from "./Cart";
 
 const CartsOrderSection = ({ ordersNum }) => {
     const { t, i18n } = useTranslation();
