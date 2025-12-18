@@ -1,3 +1,4 @@
+// src/components/AddFieldSection.jsx
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
@@ -5,12 +6,14 @@ import { Label } from "@/components/ui/label";
 import MapLocationPicker from "./MapLocationPicker";
 import { Combobox, ComboboxMultiSelect } from "@/components/ui/combobox";
 
-export default function Add({ fields, lang, values, onChange }) {
+export default function Add({ fields, lang, values, onChange, errors }) { // Added errors prop for completeness
   const commonInputClass =
     "rounded-[15px] border border-gray-300 focus:border-bg-primary focus:ring-bg-primary";
 
   const handleChange = (name, value) => {
     console.log(`Add handleChange: name=${name}, value=`, value); // Debug log
+    // In this specific application (AddCashier), the fields define their own onChange, 
+    // but for generic fields (like Switch/Combobox), we use the parent onChange.
     if (onChange) {
       onChange(lang, name, value);
     }
@@ -28,24 +31,35 @@ export default function Add({ fields, lang, values, onChange }) {
           // Check for showIf condition before rendering
           if (field.showIf && !field.showIf(values)) return null;
 
-          // Handle duration fields specially
-          let value = values?.[field.name] || "";
+          let value;
+
+          // Handle duration fields specially (Existing logic)
           if (field.name.startsWith('durations_')) {
             const planId = field.name.replace('durations_', '');
             value = values.planDurations?.[planId] || [];
+          } else {
+            // 🚨 THE FIX: Prioritize value from the field object (used by multi-language names)
+            // If field.value is defined, use it. Otherwise, use the generic values[field.name].
+            value = field.value !== undefined ? field.value : values?.[field.name] || "";
           }
 
-          console.log(`Rendering field: ${field.name}, value=`, value); // Debug log
+          console.log(`Rendering field: ${field.name}, resolved value=`, value); // Debug log
 
           const fieldId = `${field.name}-${lang}-${index}`;
+
+          // Determine the error message
+          const errorMessage = errors?.[field.name];
+
           return (
             <div key={index} className="space-y-2">
               <label
                 htmlFor={field.name}
                 className="block text-sm !p-3 font-medium text-gray-700"
               >
-                {field.placeholder ? field.placeholder : field.name}
+                {field.label || field.placeholder || field.name} {/* Use label if present */}
+                {field.required && <span className="text-red-500 ml-1">*</span>}
               </label>
+
               {(() => {
                 switch (field.type) {
                   case "input":
@@ -55,9 +69,11 @@ export default function Add({ fields, lang, values, onChange }) {
                         key={index}
                         type={field.inputType || "text"}
                         placeholder={field.placeholder}
-                        value={value}
-                        onChange={(e) => handleChange(field.name, e.target.value)}
-                        className={`!px-5 !py-4 ${commonInputClass}`}
+                        value={value} // Uses the correctly resolved 'value'
+                        // If the field provided a specific onChange, use it directly (as in AddCashier.jsx)
+                        // otherwise, use the generic handleChange.
+                        onChange={field.onChange ? (e) => field.onChange(e.target.value) : (e) => handleChange(field.name, e.target.value)}
+                        className={`!px-5 !py-4 ${commonInputClass} ${errorMessage ? 'border-red-500' : ''}`}
                       />
                     );
                   case "time":
@@ -68,8 +84,8 @@ export default function Add({ fields, lang, values, onChange }) {
                         type="time"
                         placeholder={field.placeholder}
                         value={value}
-                        onChange={(e) => handleChange(field.name, e.target.value)}
-                        className={`!px-5 !py-6 ${commonInputClass}`}
+                        onChange={field.onChange ? (e) => field.onChange(e.target.value) : (e) => handleChange(field.name, e.target.value)}
+                        className={`!px-5 !py-6 ${commonInputClass} ${errorMessage ? 'border-red-500' : ''}`}
                         step={field.step || "1"}
                       />
                     );
@@ -81,8 +97,8 @@ export default function Add({ fields, lang, values, onChange }) {
                         placeholder={field.placeholder}
                         value={value}
                         rows={2}
-                        onChange={(e) => handleChange(field.name, e.target.value)}
-                        className={`min-h-[40px] !px-5 !py-3 ${commonInputClass}`}
+                        onChange={field.onChange ? (e) => field.onChange(e.target.value) : (e) => handleChange(field.name, e.target.value)}
+                        className={`min-h-[40px] !px-5 !py-3 ${commonInputClass} ${errorMessage ? 'border-red-500' : ''}`}
                       />
                     );
                   case "file":
@@ -91,8 +107,8 @@ export default function Add({ fields, lang, values, onChange }) {
                         <Input
                           id={field.name}
                           type="file"
-                          onChange={(e) => handleChange(field.name, e.target.files?.[0])}
-                          className={`min-h-[46px] flex items-center text-gray-500 ${commonInputClass} file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200`}
+                          onChange={field.onChange ? (e) => field.onChange(e.target.files?.[0]) : (e) => handleChange(field.name, e.target.files?.[0])}
+                          className={`min-h-[46px] flex items-center text-gray-500 ${commonInputClass} file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 ${errorMessage ? 'border-red-500' : ''}`}
                           accept={field.accept || "image/*"}
                         />
                       </div>
@@ -102,10 +118,10 @@ export default function Add({ fields, lang, values, onChange }) {
                       <ComboboxMultiSelect
                         id={fieldId}
                         value={value}
-                        onValueChange={(val) => handleChange(field.name, val)}
+                        onValueChange={field.onChange ? field.onChange : (val) => handleChange(field.name, val)}
                         options={field.options}
                         placeholder={field.placeholder}
-                        className={`w-full !px-5 !py-6 ${commonInputClass}`}
+                        className={`w-full !px-5 !py-6 ${commonInputClass} ${errorMessage ? 'border-red-500' : ''}`}
                       />
                     );
                   case "select":
@@ -113,35 +129,32 @@ export default function Add({ fields, lang, values, onChange }) {
                       <Combobox
                         id={fieldId}
                         value={value}
-                        onValueChange={(val) => handleChange(field.name, val)}
+                        onValueChange={field.onChange ? field.onChange : (val) => handleChange(field.name, val)}
                         options={field.options}
                         placeholder={field.placeholder}
-                        className={`w-full !px-5 !py-6 ${commonInputClass}`}
+                        className={`w-full !px-5 !py-6 ${commonInputClass} ${errorMessage ? 'border-red-500' : ''}`}
                       />
                     );
                   case "switch":
-                    // Convert value to lowercase for comparison to handle both "Active" and "active"
-                    const isChecked = value?.toLowerCase() === "active";
+                    // Value for switch is passed as boolean from AddCashier.jsx
+                    const isChecked = typeof value === 'boolean' ? value : value === 1;
                     return (
-                      <div className="flex items-center gap-3">
+                      <div className="flex ml-3 items-center gap-3">
                         <Switch
                           id={field.name}
                           checked={isChecked}
-                          onCheckedChange={(checked) => {
-                            const newValue = checked ? "Active" : "Inactive"; // Use the same capitalization as your data
-                            handleChange(field.name, newValue);
-                          }}
+                          onCheckedChange={field.onChange ? field.onChange : (checked) => handleChange(field.name, checked)}
                           className={`
-          ${field.switchClassName || ''},
-          ${isChecked ? "data-[state=checked]:bg-bg-primary dark:data-[state=checked]:bg-bg-primary" : ""}
-        `}
+                            ${field.switchClassName || ''},
+                            ${isChecked ? "data-[state=checked]:bg-bg-primary dark:data-[state=checked]:bg-bg-primary" : ""}
+                          `}
                         />
                         <label
                           htmlFor={field.name}
                           className={`
-          text-md font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70,
-          ${isChecked ? "text-bg-primary dark:text-bg-primary" : "text-foreground"}
-        `}
+                            text-md font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70,
+                            ${isChecked ? "text-bg-primary dark:text-bg-primary" : "text-foreground"}
+                          `}
                         >
                           {isChecked ? (field.activeLabel || "Active") : (field.inactiveLabel || "Inactive")}
                         </label>
@@ -151,6 +164,10 @@ export default function Add({ fields, lang, values, onChange }) {
                     return null;
                 }
               })()}
+              {/* Display error message */}
+              {errorMessage && (
+                <p className="text-sm text-red-500 mt-1">{errorMessage}</p>
+              )}
             </div>
           );
         })}
@@ -158,20 +175,26 @@ export default function Add({ fields, lang, values, onChange }) {
       {/* Render map fields first, outside the grid */}
       {mapFields.map((field, index) => {
         if (field.showIf && !field.showIf(values)) return null;
+        // Map fields always read from values since they are not multi-lang
         const value = values?.[field.name] || "";
+        const errorMessage = errors?.[field.name];
+
         return (
           <div key={`map-${index}`} className="w-full space-y-2">
             <label
               htmlFor={field.name}
               className="block text-sm !p-3 font-medium text-gray-700"
             >
-              {field.placeholder ? field.placeholder : field.name}
+              {field.label || field.placeholder || field.name}
             </label>
             <MapLocationPicker
               value={value}
-              onChange={(val) => handleChange(field.name, val)}
+              onChange={field.onChange ? field.onChange : (val) => handleChange(field.name, val)}
               placeholder={field.placeholder}
             />
+            {errorMessage && (
+              <p className="text-sm text-red-500 mt-1">{errorMessage}</p>
+            )}
           </div>
         );
       })}

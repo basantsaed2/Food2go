@@ -27,7 +27,7 @@ export default function Navbar({ className }) {
           <SidebarTrigger className="text-bg-primary hover:text-white rounded-md" />
         </div>
         <div className="flex items-center gap-2 text-bg-primary font-semibold text-lg">
-          Hello {userName || "branch"}
+          Branch {userName || "branch"}
         </div>
       </div>
 

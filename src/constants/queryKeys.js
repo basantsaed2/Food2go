@@ -29,5 +29,13 @@ export const QUERY_KEYS = {
   // Cashier Management
   CASHIERS: ['cashiers'],
 
+  //translations
+  TRANSLATIONS: ['translations'],
+
+  //Financial Management
+  FINANCIAL: ['financial'],
+
+  CASHIER_MAN: ['cashier_man'],
+
 
 };

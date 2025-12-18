@@ -16,6 +16,11 @@ import AddStockProduct from "./Pages/Branch/Stocks/StockProduct/AddStockProduct"
 import StockCategory from "./Pages/Branch/Stocks/StockCategory/StockCategory";
 import AddStockCategory from "./Pages/Branch/Stocks/StockCategory/AddStockCategory";
 import Cashier from "./Pages/Branch/Cashier/Cashier";
+import AddCashier from "./Pages/Branch/Cashier/AddCashier";
+import CashierMan from "./Pages/Branch/CashierMan/CashierMan";
+import AddCashierMan from "./Pages/Branch/CashierMan/AddCashierMan";
+import Financial from "./Pages/Branch/Financial/Financial";
+import AddFinancial from "./Pages/Branch/Financial/AddFinancial";
 
 const router = createBrowserRouter([
   {
@@ -46,7 +51,19 @@ const router = createBrowserRouter([
       },
       {
         path: "cashier",
-        element: <Cashier />,
+        children: [
+          { index: true, element: <Cashier /> },
+          { path: "add", element: <AddCashier /> },
+          { path: "edit/:cashierId", element: <AddCashier /> },
+        ],
+      },
+      {
+        path: "cashier_man",
+        children: [
+          { index: true, element: <CashierMan /> },
+          { path: "add", element: <AddCashierMan /> },
+          { path: "edit/:cashierManId", element: <AddCashierMan /> },
+        ],
       },
       {
         path: "stock",
@@ -83,6 +100,14 @@ const router = createBrowserRouter([
               { path: "edit/:productId", element: <AddStockProduct /> },
             ],
           },
+        ],
+      },
+      {
+        path: "financial_accounts",
+        children: [
+          { index: true, element: <Financial /> },
+          { path: "add", element: <AddFinancial /> },
+          { path: "edit/:financialId", element: <AddFinancial /> },
         ],
       },
       {

@@ -19,10 +19,13 @@ import logo from "@/assets/Logo.jpeg"
 import { FaUsers } from "react-icons/fa6";
 import { TbWorldCheck } from "react-icons/tb";
 import { MdProductionQuantityLimits } from "react-icons/md";
+import { FaCashRegister } from "react-icons/fa";
+import { FaCcMastercard } from "react-icons/fa";
 
 const navItems = [
     { label: "Home", to: "/", icon: <AiOutlineHome className="stroke-2" size={20} /> },
-    { label: "Cashier", to: "/cashier", icon: <UserLock className="stroke-2" size={20} /> },
+    { label: "Cashier", to: "/cashier", icon: <FaCashRegister className="stroke-2" size={20} /> },
+    { label: "Cashier Man", to: "/cashier_man", icon: <UserLock className="stroke-2" size={20} /> },
     {
         label: "Stock",
         icon: <PackagePlus className="stroke-2" size={20} />,
@@ -32,6 +35,9 @@ const navItems = [
             { label: "Stock Category", to: "/stock/category", icon: <LayoutTemplate className="stroke-2" size={18} /> },
             { label: "Stock Product", to: "/stock/product", icon: <MdProductionQuantityLimits size={18} /> },
         ],
+    },
+    {
+        label: "Financial Accounts", to: "/financial_accounts", icon: <FaCcMastercard className="stroke-2" size={20} />,
     },
 ];
 
