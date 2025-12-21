@@ -21,6 +21,8 @@ import CashierMan from "./Pages/Branch/CashierMan/CashierMan";
 import AddCashierMan from "./Pages/Branch/CashierMan/AddCashierMan";
 import Financial from "./Pages/Branch/Financial/Financial";
 import AddFinancial from "./Pages/Branch/Financial/AddFinancial";
+import OrderOnline from "./Pages/Branch/OrderOnline/OrderOnline";
+import OrderDetails from "./Pages/Branch/OrderOnline/OrderDetails";
 
 const router = createBrowserRouter([
   {
@@ -48,6 +50,14 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <HomePage />,
+      },
+      {
+        path: 'order_online',
+        element: <OrderOnline />
+      },
+      {
+        path: 'orders/details/:orderId',
+        element: <OrderDetails />
       },
       {
         path: "cashier",

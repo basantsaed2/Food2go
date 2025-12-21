@@ -1,5 +1,8 @@
 // src/constants/queryKeys.js
 export const QUERY_KEYS = {
+
+  //orders
+  ORDERS: ['orders'],
   // Stock Management
   STOCKS: ['stocks'],
   STOCK_LIST: ['stocks', 'list'],

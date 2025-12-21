@@ -21,9 +21,11 @@ import { TbWorldCheck } from "react-icons/tb";
 import { MdProductionQuantityLimits } from "react-icons/md";
 import { FaCashRegister } from "react-icons/fa";
 import { FaCcMastercard } from "react-icons/fa";
+import { IoBagAddOutline } from "react-icons/io5";
 
 const navItems = [
     { label: "Home", to: "/", icon: <AiOutlineHome className="stroke-2" size={20} /> },
+    { label: "Order Online", to: "/order_online", icon: <IoBagAddOutline className="stroke-2" size={20} /> },
     { label: "Cashier", to: "/cashier", icon: <FaCashRegister className="stroke-2" size={20} /> },
     { label: "Cashier Man", to: "/cashier_man", icon: <UserLock className="stroke-2" size={20} /> },
     {

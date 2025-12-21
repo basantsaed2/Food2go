@@ -20,6 +20,7 @@ function Table({
   onView,
   onDelete,
   onExport,
+  onRowClick,
   actionsButtons = true,
   renderActionCell,
   renderReceiptCell,
@@ -336,7 +337,14 @@ function Table({
               </TableRow>
             ) : (
               paginatedData.map((item, index) => (
-                <TableRow key={index} className="border-b border-gray-100 hover:bg-blue-50/50 transition-colors">
+                <TableRow
+                  key={index}
+                  className={cn(
+                    "border-b border-gray-100 hover:bg-blue-50/50 transition-colors",
+                    onRowClick && "cursor-pointer" // اجعل الماوس يتحول ليد عند وجود دالة ضغط
+                  )}
+                  onClick={() => onRowClick && onRowClick(item)}
+                >
                   {columns.map((col) => (
                     <TableCell className="py-4" key={col.key}>
                       {/* Check if column has a custom renderCell function */}
