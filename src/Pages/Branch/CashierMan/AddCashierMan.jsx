@@ -1,34 +1,29 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
-import Add from '@/components/AddFieldSection';
-import { ChevronLeft } from 'lucide-react';
-import { usePost } from '@/hooks/usePost';
 import { useSelector } from 'react-redux';
+import { Formik } from 'formik';
+import { z } from 'zod';
+import { toFormikValidationSchema } from 'zod-formik-adapter';
+import { ChevronLeft } from 'lucide-react';
+import Add from '@/components/AddFieldSection';
+import { usePost } from '@/hooks/usePost';
 
-// Helper for default state to avoid redundancy
-const getInitialState = (isEditMode, itemData) => {
-    const base = {
-        name: '', password: '', shift_number: '', my_id: '',
-        image: null, img: '', delivery: false, take_away: false,
-        dine_in: false, online_order: false, discount_perimission: false,
-        real_order: false, void_order: false, status: true
-    };
-
-    if (isEditMode && itemData) {
-        return {
-            ...base,
-            name: itemData.name || '',
-            shift_number: itemData.shift_number || '',
-            my_id: itemData.my_id || '',
-            image: itemData.image_link || null,
-            img: itemData.image_link || '',
-            // Mapping numeric 1/0 from API to boolean
-            ...['delivery', 'take_away', 'dine_in', 'online_order', 'discount_perimission', 'real_order', 'void_order', 'status']
-                .reduce((acc, key) => ({ ...acc, [key]: !!itemData[key] }), {})
-        };
-    }
-    return base;
-};
+// 1. PAGE-SPECIFIC VALIDATION (Internal to this page)
+const cashierSchema = z.object({
+    name: z.string().min(3, "Username must be at least 3 characters"),
+    password: z.string().min(6, "Password must be 6+ chars").optional().or(z.literal('')),
+    shift_number: z.coerce.number().min(1, "Shift number is required"),
+    my_id: z.coerce.number().min(1, "ID is required"),
+    image: z.any().nullable(),
+    delivery: z.boolean(),
+    take_away: z.boolean(),
+    dine_in: z.boolean(),
+    online_order: z.boolean(),
+    discount_perimission: z.boolean(),
+    real_order: z.boolean(),
+    void_order: z.boolean(),
+    status: z.boolean(),
+});
 
 const AddCashierMan = () => {
     const apiUrl = import.meta.env.VITE_API_BASE_URL;
@@ -39,20 +34,33 @@ const AddCashierMan = () => {
 
     const isEditMode = !!cashierManId;
     const itemData = state?.itemData;
-    const [values, setValues] = useState({});
 
-    const { postData: addCashierMan, loadingPost: adding } = usePost({
-        url: `${apiUrl}/branch/cashier_man/add`,
+    const { postData, loadingPost } = usePost({
+        url: isEditMode ? `${apiUrl}/branch/cashier_man/update/${cashierManId}` : `${apiUrl}/branch/cashier_man/add`,
         invalidateKey: 'CASHIER_MAN',
     });
 
-    const { postData: updateCashierMan, loadingPost: updating } = usePost({
-        url: `${apiUrl}/branch/cashier_man/update/${cashierManId}`,
-        invalidateKey: 'CASHIER_MAN',
-    });
+    // 2. Initial State Logic
+    const initialValues = useMemo(() => {
+        const base = {
+            name: '', password: '', shift_number: '', my_id: '',
+            image: null, delivery: false, take_away: false,
+            dine_in: false, online_order: false, discount_perimission: false,
+            real_order: false, void_order: false, status: true
+        };
 
-    useEffect(() => {
-        setValues(getInitialState(isEditMode, itemData));
+        if (isEditMode && itemData) {
+            return {
+                ...base,
+                name: itemData.name || '',
+                shift_number: itemData.shift_number || '',
+                my_id: itemData.my_id || '',
+                image: itemData.image_link || null,
+                ...['delivery', 'take_away', 'dine_in', 'online_order', 'discount_perimission', 'real_order', 'void_order', 'status']
+                    .reduce((acc, key) => ({ ...acc, [key]: !!itemData[key] }), {})
+            };
+        }
+        return base;
     }, [isEditMode, itemData]);
 
     const fields = useMemo(() => [
@@ -71,28 +79,23 @@ const AddCashierMan = () => {
         { type: 'switch', name: 'status', placeholder: 'Account Status' },
     ], [isEditMode]);
 
-    const handleChange = (_, name, value) => setValues(prev => ({ ...prev, [name]: value }));
-
-    const handleSubmit = () => {
+    const handleSubmit = (values) => {
         const formData = new FormData();
-        const booleanFields = ['delivery', 'take_away', 'dine_in', 'online_order', 'discount_perimission', 'real_order', 'void_order', 'status'];
-
-        formData.append('user_name', values.name || '');
+        formData.append('user_name', values.name);
         formData.append('branch_id', user?.id || '');
-        formData.append('shift_number', values.shift_number || '');
-        formData.append('my_id', values.my_id || '');
+        formData.append('shift_number', values.shift_number);
+        formData.append('my_id', values.my_id);
         if (values.password) formData.append('password', values.password);
 
-        // Append booleans as 1/0
-        booleanFields.forEach(field => formData.append(field, values[field] ? 1 : 0));
+        // Boolean to 1/0
+        ['delivery', 'take_away', 'dine_in', 'online_order', 'discount_perimission', 'real_order', 'void_order', 'status']
+            .forEach(f => formData.append(f, values[f] ? 1 : 0));
 
         if (values.image && typeof values.image !== 'string') {
             formData.append('image', values.image);
         }
 
-        const msg = isEditMode ? 'Updated Successfully!' : 'Added Successfully!';
-        const submitFn = isEditMode ? updateCashierMan : addCashierMan;
-        submitFn(formData, msg, () => navigate(-1));
+        postData(formData, isEditMode ? 'Updated Successfully!' : 'Added Successfully!', () => navigate(-1));
     };
 
     if (isEditMode && !itemData) return <div className="p-8 text-center">Loading...</div>;
@@ -100,26 +103,50 @@ const AddCashierMan = () => {
     return (
         <div className="p-4">
             <div className="flex items-center mb-4">
-                <button onClick={() => navigate(-1)} className="p-2 bg-white rounded-md mr-3 shadow-sm">
+                <button onClick={() => navigate(-1)} className="p-2 bg-white rounded-md mr-3 shadow-sm hover:bg-gray-100">
                     <ChevronLeft className="h-6 w-6" />
                 </button>
                 <h2 className="text-2xl font-bold">{isEditMode ? 'Edit' : 'Add'} Cashier Man</h2>
             </div>
 
-            <div className="py-10 px-4 bg-white rounded-lg shadow-md">
-                <Add fields={fields} values={values} onChange={handleChange} />
-            </div>
+            <Formik
+                initialValues={initialValues}
+                validationSchema={toFormikValidationSchema(cashierSchema)}
+                onSubmit={handleSubmit}
+                enableReinitialize
+            >
+                {({ values, errors, touched, setFieldValue, handleSubmit, resetForm }) => (
+                    <>
+                        <div className="py-10 px-4 bg-white rounded-lg shadow-md transition-all">
+                            <Add
+                                fields={fields}
+                                values={values}
+                                errors={errors}
+                                touched={touched}
+                                onChange={(_, name, val) => setFieldValue(name, val)}
+                            />
+                        </div>
 
-            <div className="mt-6 flex justify-end gap-4">
-                <button onClick={() => setValues(getInitialState(isEditMode, itemData))} className="px-6 py-2 bg-gray-300 rounded-md">Reset</button>
-                <button
-                    onClick={handleSubmit}
-                    disabled={adding || updating}
-                    className="px-6 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50"
-                >
-                    {adding || updating ? 'Submitting...' : isEditMode ? 'Update' : 'Submit'}
-                </button>
-            </div>
+                        <div className="mt-6 flex justify-end gap-4">
+                            <button
+                                type="button"
+                                onClick={() => resetForm()}
+                                className="px-6 py-2 bg-gray-300 rounded-md hover:bg-gray-400"
+                            >
+                                Reset
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => handleSubmit()}
+                                disabled={loadingPost}
+                                className="px-6 py-2 bg-blue-600 text-white rounded-md disabled:opacity-50 hover:bg-blue-700 shadow-lg"
+                            >
+                                {loadingPost ? 'Submitting...' : isEditMode ? 'Update' : 'Submit'}
+                            </button>
+                        </div>
+                    </>
+                )}
+            </Formik>
         </div>
     );
 };

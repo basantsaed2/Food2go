@@ -40,5 +40,7 @@ export const QUERY_KEYS = {
 
   CASHIER_MAN: ['cashier_man'],
 
+  DELIVERY_MAN: ['delivery_man'],
+
 
 };

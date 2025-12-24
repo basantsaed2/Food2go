@@ -1,20 +1,17 @@
-import { FaArrowLeft } from "react-icons/fa"
 import { useNavigate } from "react-router-dom"
-import { MdArrowBackIos } from "react-icons/md";
+import { ChevronLeft } from "lucide-react";
 
-const TitleSection = ({ text, nav }) => {
+const TitleSection = ({ text, nav = -1 }) => {
     const navigate = useNavigate()
     return (
         <>
-            <div className="w-full flex items-center gap-3">
-                <button
-                    onClick={() => navigate(-1)}
-                    className="text-bg-primary text-2xl cursor-pointer hover:text-gray-500 transition-all"
-                >
-                    <MdArrowBackIos />
+            <div className="flex items-center mb-4">
+                <button onClick={() => navigate(nav)} className="p-2.5 bg-white text-bg-primary rounded-xl mr-4 shadow-sm hover:shadow-md border border-gray-100 transition-all">
+                    <ChevronLeft className="h-6 w-6" />
                 </button>
-                <span className="text-2xl font-TextFontMedium text-bg-primary">{text}</span>
+                <h2 className="text-2xl font-bold text-bg-primary">{text}</h2>
             </div>
+
         </>
     )
 }

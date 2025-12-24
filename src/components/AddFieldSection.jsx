@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import MapLocationPicker from "./MapLocationPicker";
 import { Combobox, ComboboxMultiSelect } from "@/components/ui/combobox";
 
-export default function Add({ fields, lang, values, onChange, errors }) { // Added errors prop for completeness
+export default function Add({ fields, lang, values, onChange, errors, touched }) { // Added errors prop for completeness
   const commonInputClass =
     "rounded-[15px] border border-gray-300 focus:border-bg-primary focus:ring-bg-primary";
 
@@ -47,8 +47,8 @@ export default function Add({ fields, lang, values, onChange, errors }) { // Add
 
           const fieldId = `${field.name}-${lang}-${index}`;
 
-          // Determine the error message
-          const errorMessage = errors?.[field.name];
+          // ONLY show the error if the user has interacted with the field
+          const errorMessage = touched?.[field.name] ? errors?.[field.name] : null;
 
           return (
             <div key={index} className="space-y-2">
@@ -107,7 +107,16 @@ export default function Add({ fields, lang, values, onChange, errors }) { // Add
                         <Input
                           id={field.name}
                           type="file"
-                          onChange={field.onChange ? (e) => field.onChange(e.target.files?.[0]) : (e) => handleChange(field.name, e.target.files?.[0])}
+                          onChange={(e) => {
+                            const selectedFile = e.target.files?.[0];
+                            const safeValue = selectedFile instanceof File ? selectedFile : null;
+
+                            if (field.onChange) {
+                              field.onChange(safeValue);
+                            } else {
+                              handleChange(field.name, safeValue);
+                            }
+                          }}
                           className={`min-h-[46px] flex items-center text-gray-500 ${commonInputClass} file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 ${errorMessage ? 'border-red-500' : ''}`}
                           accept={field.accept || "image/*"}
                         />
