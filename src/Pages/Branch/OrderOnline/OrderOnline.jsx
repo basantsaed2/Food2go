@@ -18,7 +18,7 @@ const OrderOnline = () => {
     const { data, isLoading, isError, error } = useGet({
         url: `${apiUrl}/branch/online_order`,
         queryKey: [QUERY_KEYS.ORDERS],
-        pollInterval: 30000, // تحديث تلقائي كل 30 ثانية
+        pollInterval: 60000, // تحديث تلقائي كل دقيقه
     });
 
     // 3. دالة التوجيه لصفحة التفاصيل
